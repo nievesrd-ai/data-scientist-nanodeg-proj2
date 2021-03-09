@@ -8,11 +8,13 @@ from nltk.tokenize import word_tokenize
 from flask import Flask
 from flask import render_template, request, jsonify
 from plotly.graph_objs import Bar
-from sklearn.externals import joblib
 from sqlalchemy import create_engine
-
+import joblib
+import os
+import plotly.express as px
 
 app = Flask(__name__)
+
 
 def tokenize(text):
     tokens = word_tokenize(text)
@@ -25,14 +27,48 @@ def tokenize(text):
 
     return clean_tokens
 
-# load data
-engine = create_engine('sqlite:///../data/YourDatabaseName.db')
-df = pd.read_sql_table('YourTableName', engine)
+
+
+cwd = os.getcwd()
+script_path = os.path.dirname(os.path.realpath(__file__))
+os.chdir(script_path)
+
+engine = create_engine('sqlite:///../data/DisasterResponse.db')
+df = pd.read_sql_table('DisasterTweets', engine)
+metrics_df = pd.read_sql_table('Performance', engine)
 
 # load model
-model = joblib.load("../models/your_model_name.pkl")
+model = joblib.load("../models/classifier.pkl")
 
 
+def make_figures(df):
+    df = df.sort_values(by='accuracy')
+    fig = px.bar(
+        df,
+        y='category',
+        x='accuracy',
+        title='Prediction Accuracy',
+        )
+    fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='Grey', title='Accuracy')
+    fig.update_yaxes(title='Category')
+                     
+    data_1 = fig.data
+    layout_1 = fig.layout
+    
+    df = df.sort_values(by='f1-score')
+    fig = px.bar(df, y='category', x='f1-score', title='Prediction F1 Score')
+    fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='Grey', title='F1 Score')
+    fig.update_yaxes(title='Category')
+                     
+    data_2 = fig.data
+    layout_2 = fig.layout
+    
+    # append all charts to the figures list
+    figures = []
+    figures.append(dict(data=data_1, layout=layout_1))
+    figures.append(dict(data=data_2, layout=layout_2))
+    return figures
+    
 # index webpage displays cool visuals and receives user input text for model
 @app.route('/')
 @app.route('/index')
@@ -42,6 +78,8 @@ def index():
     # TODO: Below is an example - modify to extract data for your own visuals
     genre_counts = df.groupby('genre').count()['message']
     genre_names = list(genre_counts.index)
+    
+    my_figures = make_figures(metrics_df)
     
     # create visuals
     # TODO: Below is an example - modify to create your own visuals
@@ -63,7 +101,9 @@ def index():
                     'title': "Genre"
                 }
             }
-        }
+        },
+        my_figures[0],
+        my_figures[1]
     ]
     
     # encode plotly graphs in JSON
@@ -98,3 +138,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+    os.chdir(cwd)

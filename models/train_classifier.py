@@ -19,9 +19,11 @@ from sklearn.metrics import classification_report
 from sklearn.model_selection import GridSearchCV
 import sklearn.metrics as metrics
 from sklearn.model_selection import train_test_split
+from sqlalchemy import create_engine
 
 # Constants ---------------
 TABLENAME = 'DisasterTweets'
+PERFORMANCE_TABLE = 'Performance'
 
 def load_data(database_filepath):
     """[summary]
@@ -123,13 +125,26 @@ def evaluate_model(model, X_test, Y_test, category_names):
         clsn_dict['accuracy'] = metrics.accuracy_score(Y_test[:, col], y_test_pred[:, col])
         clsn_dict['precision'] = metrics.precision_score(Y_test[:, col], y_test_pred[:, col], average='weighted')
         clsn_dict['recall'] = metrics.recall_score(Y_test[:, col], y_test_pred[:, col], average='weighted')
-        clsn_dict['f1-score'] = metrics.f1_score(Y_test[:, col], y_test_pred[:, col], average='weighted')    
+        clsn_dict['f1-score'] = metrics.f1_score(Y_test[:, col], y_test_pred[:, col], average='weighted')
         
         for metric_name in metric_names:
             clsn_metrics[metric_name].append(clsn_dict[metric_name])
     clsn_metrics['category'] = category_names
     clsn_metrics = pd.DataFrame(clsn_metrics)
     print(clsn_metrics)
+    return clsn_metrics
+
+def save_metrics(metrics_df, database_filepath):
+    """Saves performance metrics to database
+
+    Args:
+        metrics_df (pandas.DataFrame): Data frame with metrics as generated
+            by evaluate_model
+        database_filepath (str): Path to sqlite database file to update
+    """
+    database_filepath = 'sqlite:///' + database_filepath
+    engine = create_engine(database_filepath)
+    metrics_df.to_sql(PERFORMANCE_TABLE, engine, index=False, if_exists='replace')
 
 def save_model(model, model_filepath):
     """Saves trained model
@@ -156,12 +171,15 @@ def main():
         model.fit(X_train, Y_train)
         
         print('Evaluating model...')
-        evaluate_model(model, X_test, Y_test, category_names)
+        clsn_metrics = evaluate_model(model, X_test, Y_test, category_names)
 
         print('Saving model...\n    MODEL: {}'.format(model_filepath))
         save_model(model, model_filepath)
-
         print('Trained model saved!')
+
+        print('Saving metrics...\n    MODEL: {}'.format(database_filepath))
+        save_metrics(clsn_metrics, database_filepath)
+        
 
     else:
         print('Please provide the filepath of the disaster messages database '\
