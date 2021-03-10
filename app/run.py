@@ -23,9 +23,6 @@ engine = create_engine('sqlite:///../data/DisasterResponse.db')
 df = pd.read_sql_table('DisasterTweets', engine)
 metrics_df = pd.read_sql_table('Performance', engine)
 
-# load model
-model = joblib.load("../models/classifier.pkl")
-
 
 def tokenize(text):
     """Prepares text data for vectorization
@@ -45,6 +42,9 @@ def tokenize(text):
 
     return clean_tokens
 
+
+# load model
+model = joblib.load("../models/classifier.pkl")
 
 def prep_for_deviation(df):
     """Normalizes accuracy metric in df to support deviation bar plot
