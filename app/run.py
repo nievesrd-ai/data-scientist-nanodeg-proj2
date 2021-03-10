@@ -40,6 +40,13 @@ metrics_df = pd.read_sql_table('Performance', engine)
 # load model
 model = joblib.load("../models/classifier.pkl")
 
+def prep_for_deviation(df):
+    moded_df = df.copy()
+    x = moded_df.loc[:, ['accuracy']]
+    moded_df['accuracy_z'] = (x - x.mean())/x.std()
+    moded_df['colors'] = ['red' if x < 0 else 'green' for x in moded_df['accuracy_z']]
+    moded_df.sort_values(by='accuracy_z', inplace=True, ignore_index=True)
+    return moded_df
 
 def make_figures(df):
     df = df.sort_values(by='accuracy')
@@ -62,11 +69,33 @@ def make_figures(df):
                      
     data_2 = fig.data
     layout_2 = fig.layout
-    
+
+    moded_df = prep_for_deviation(df)
+    fig = px.bar(
+        moded_df,
+        y='category',
+        x='accuracy_z',
+        color='colors',
+        title='Diverging Bars of Prediction Accuracy',
+        )
+
+    fig.update_xaxes(
+        showgrid=True,
+        gridwidth=1,
+        gridcolor='Grey',
+        range=(-2, 2),
+        title='Normalized Deviations from Mean Accuracy')
+    fig.update_yaxes(title='Category')
+    fig.update_layout(showlegend=False)
+
+    data_3 = fig.data
+    layout_3 = fig.layout     
     # append all charts to the figures list
     figures = []
     figures.append(dict(data=data_1, layout=layout_1))
     figures.append(dict(data=data_2, layout=layout_2))
+    figures.append(dict(data=data_3, layout=layout_3))
+  
     return figures
     
 # index webpage displays cool visuals and receives user input text for model
@@ -103,6 +132,7 @@ def index():
             }
         },
         my_figures[0],
+        my_figures[2],
         my_figures[1]
     ]
     
