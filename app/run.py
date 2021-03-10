@@ -15,20 +15,6 @@ import plotly.express as px
 
 app = Flask(__name__)
 
-
-def tokenize(text):
-    tokens = word_tokenize(text)
-    lemmatizer = WordNetLemmatizer()
-
-    clean_tokens = []
-    for tok in tokens:
-        clean_tok = lemmatizer.lemmatize(tok).lower().strip()
-        clean_tokens.append(clean_tok)
-
-    return clean_tokens
-
-
-
 cwd = os.getcwd()
 script_path = os.path.dirname(os.path.realpath(__file__))
 os.chdir(script_path)
@@ -40,15 +26,54 @@ metrics_df = pd.read_sql_table('Performance', engine)
 # load model
 model = joblib.load("../models/classifier.pkl")
 
+
+def tokenize(text):
+    """Prepares text data for vectorization
+
+    Args:
+        text (str): Text data to be processed
+
+    Returns:
+        list: List of words ready for vectoization
+    """
+    tokens = word_tokenize(text)
+    lemmatizer = WordNetLemmatizer()
+    clean_tokens = []
+    for tok in tokens:
+        clean_tok = lemmatizer.lemmatize(tok).lower().strip()
+        clean_tokens.append(clean_tok)
+
+    return clean_tokens
+
+
 def prep_for_deviation(df):
+    """Normalizes accuracy metric in df to support deviation bar plot
+
+    Args:
+        df (pandas.DataFrame): Data frame with accuracy column
+
+    Returns:
+        pandas.DataFrame: Updated data frame with new accuracy and color column
+    """
     moded_df = df.copy()
     x = moded_df.loc[:, ['accuracy']]
     moded_df['accuracy_z'] = (x - x.mean())/x.std()
-    moded_df['colors'] = ['red' if x < 0 else 'green' for x in moded_df['accuracy_z']]
+    moded_df['colors'] = \
+        ['red' if x < 0 else 'green' for x in moded_df['accuracy_z']]
     moded_df.sort_values(by='accuracy_z', inplace=True, ignore_index=True)
     return moded_df
 
+
 def make_figures(df):
+    """Creates plotly figures
+
+    Args:
+        df (pandas.DataFrame): Has the data to be used in figures
+
+    Returns:
+        list: Each element in the list is a dictionary with the data and meta-
+            data used by plotly to render plots in javascript
+    """
     df = df.sort_values(by='accuracy')
     fig = px.bar(
         df,
@@ -56,17 +81,25 @@ def make_figures(df):
         x='accuracy',
         title='Prediction Accuracy',
         )
-    fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='Grey', title='Accuracy')
+    fig.update_xaxes(
+        showgrid=True,
+        gridwidth=1,
+        gridcolor='Grey',
+        title='Accuracy')
     fig.update_yaxes(title='Category')
-                     
+
     data_1 = fig.data
     layout_1 = fig.layout
-    
+
     df = df.sort_values(by='f1-score')
     fig = px.bar(df, y='category', x='f1-score', title='Prediction F1 Score')
-    fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='Grey', title='F1 Score')
+    fig.update_xaxes(
+        showgrid=True,
+        gridwidth=1,
+        gridcolor='Grey',
+        title='F1 Score')
     fig.update_yaxes(title='Category')
-                     
+
     data_2 = fig.data
     layout_2 = fig.layout
 
@@ -89,20 +122,24 @@ def make_figures(df):
     fig.update_layout(showlegend=False)
 
     data_3 = fig.data
-    layout_3 = fig.layout     
+    layout_3 = fig.layout
     # append all charts to the figures list
     figures = []
     figures.append(dict(data=data_1, layout=layout_1))
     figures.append(dict(data=data_2, layout=layout_2))
     figures.append(dict(data=data_3, layout=layout_3))
-  
+
     return figures
     
 # index webpage displays cool visuals and receives user input text for model
 @app.route('/')
 @app.route('/index')
 def index():
-    
+    """Calls various functions that generate the data and metadata for the view
+
+    Returns:
+        flask.render_template: Handler that renders page on HTML
+    """
     # extract data needed for visuals
     # TODO: Below is an example - modify to extract data for your own visuals
     genre_counts = df.groupby('genre').count()['message']
@@ -147,6 +184,11 @@ def index():
 # web page that handles user query and displays model results
 @app.route('/go')
 def go():
+    """Handles user query and displays model results
+
+    Returns:
+        flask.render_template: Handler that renders page on HTML
+    """
     # save user input in query
     query = request.args.get('query', '') 
 
@@ -163,6 +205,8 @@ def go():
 
 
 def main():
+    """Runs the flask app
+    """
     app.run(host='0.0.0.0', port=3001, debug=True)
 
 
