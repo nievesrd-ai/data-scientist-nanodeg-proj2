@@ -60,7 +60,8 @@ def prep_for_deviation(df):
     moded_df['accuracy_z'] = (x - x.mean())/x.std()
     moded_df['colors'] = \
         ['red' if x < 0 else 'green' for x in moded_df['accuracy_z']]
-    moded_df.sort_values(by='accuracy_z', inplace=True, ignore_index=True)
+    moded_df.sort_values(by='accuracy_z', inplace=True)
+    moded_df.reset_index()
     return moded_df
 
 
