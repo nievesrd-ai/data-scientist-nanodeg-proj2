@@ -13,7 +13,7 @@ def clean_labels(_labels, keep=1):
 
     Args:
         _labels (list): List of strings to be processed
-        keep (int, optional): [description]. Defaults to 1. Tells the function 
+        keep (int, optional): [description]. Defaults to 1. Tells the function
             if either the labels or the value is to be kept
 
     Returns:
@@ -23,7 +23,7 @@ def clean_labels(_labels, keep=1):
     for label in _labels:
         item = label.split('-')[keep]
         if keep:
-            item=int(item)
+            item = int(item)
         cleaned.append(item)
     return cleaned
 
@@ -121,7 +121,7 @@ def save_data(df, database_filename):
     """
     database_filename = 'sqlite:///' + database_filename
     engine = create_engine(database_filename)
-
+    df.to_sql(TABLENAME, engine, index=False, if_exists='replace')
 
 
 def main():
