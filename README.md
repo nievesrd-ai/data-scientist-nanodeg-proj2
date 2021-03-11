@@ -9,6 +9,7 @@ ELT pipelines, trains a ML model and interfaces a web front end that assigns cat
 	```	
 		git clone https://github.com/nievesrd-ai/data-scientist-nanodeg-proj2.git
 		cd data-scientist-nanodeg-proj2/app
+	```
 2. This project was built and tested for python 3.9. Make sure you have already installed the necessary Python packages according to `requirements.txt`
 
 3. Run the following commands in the project's root directory to set up your database and model.
@@ -16,6 +17,8 @@ ELT pipelines, trains a ML model and interfaces a web front end that assigns cat
 		`python data/process_data.py data/disaster_messages.csv data/disaster_categories.csv data/DisasterResponse.db`
 	- To run ML pipeline that trains classifier and saves
 		`python models/train_classifier.py data/DisasterResponse.db models/classifier.pkl`
+	- To prepare your enviroment tu run the web app
+		`pip install plotly -U`
 
 2. Run the following command in the app's directory to run your web app.
     `python run.py`
