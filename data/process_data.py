@@ -9,7 +9,7 @@ TABLENAME = 'DisasterTweets'
 
 # Helper functions -------------------------------
 def clean_labels(_labels, keep=1):
-    """An input list of string labels is split and casted to int
+    """An input list of string numeric labels is split and casted to int
 
     Args:
         _labels (list): List of strings to be processed
@@ -50,13 +50,21 @@ def get_dummies(df, category_colnames):
     Returns:
         pandas.DataFrame: Data frame of categorical dummy/indicator variables
     """
+    # Creating dictionary of categories filled with empty lists
     category_df = {category: [] for category in category_colnames}
-
+    # Apply two transformations to the raw category data. 
+    # First, splitting by ';', then applying clean_labels function
+    # Each element of this series has a list applicable cleaned categories
     temp_series = df['categories'].apply(lambda x: x.split(';')).apply(clean_labels)
+
+    # Getting a 2D array, rows are categories, columns are boolean labels
     cat_array= np.array(list(temp_series))
 
+    # Filling the new dictionary. Hot one encoding with
+    # rows being records, columns being categories filled with booleans
     for j, category in enumerate(category_colnames):
         category_df[category] = cat_array[:, j]
+
     category_df = pd.DataFrame(category_df)
     return category_df        
 # ----------------------------------------------------
@@ -103,8 +111,9 @@ def clean_data(df):
     
     # dummifying
     categories = get_dummies(df, category_colnames)
-
+    # Adding hot one encoding columns to original dataframe
     df = pd.concat([df, categories], axis=1)
+    # Removing the raw categories column
     df = df.drop(['categories'], axis=1)
 
     # drop duplicates

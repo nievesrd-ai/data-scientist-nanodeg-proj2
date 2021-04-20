@@ -86,6 +86,9 @@ def tokenize(text):
 def build_model():
     """Creates a pipeline model
 
+    The pipeline applies CountVectorizer, TfidfTransformer and then feeds it to 
+    the RandomForstClassifier
+
     Returns:
         [type]: [description]
     """
@@ -94,13 +97,14 @@ def build_model():
         ('tfidf', TfidfTransformer()),
         ('clf', MultiOutputClassifier(RandomForestClassifier()))
     ])
-
+    # Set up grid search
     parameters = {
             'vect__ngram_range': ((1, 1), (1, 2)),
             'vect__max_df': (0.5, 0.75),
             'tfidf__use_idf': (True, False),
             'clf__estimator__min_samples_split': [2, 3],
         }
+    # Feed the pipeline to GridSearchCV and returned trained model with best parameters
     cv = GridSearchCV(
         pipeline,
         param_grid=parameters,
@@ -119,15 +123,19 @@ def evaluate_model(model, X_test, Y_test, category_names):
     """
     y_test_pred = model.predict(X_test)
     metric_names = ['accuracy', 'f1-score', 'precision', 'recall']
+    # Stores overall performance metrics
     clsn_metrics = {metric_name: [] for metric_name in metric_names}
+    # As each prediction has more than one class, we have to loop over
+    # each of the labels, and compute individual metrics for each class
     for col in range(0, y_test_pred.shape[1]):
-        
+        # Creating a dictionary of metrics for each class
         clsn_dict = {}
         clsn_dict['accuracy'] = metrics.accuracy_score(Y_test[:, col], y_test_pred[:, col])
         clsn_dict['precision'] = metrics.precision_score(Y_test[:, col], y_test_pred[:, col], average='weighted')
         clsn_dict['recall'] = metrics.recall_score(Y_test[:, col], y_test_pred[:, col], average='weighted')
         clsn_dict['f1-score'] = metrics.f1_score(Y_test[:, col], y_test_pred[:, col], average='weighted')
-        
+
+        # Updating the storage for overall performance metrics with newly acquired metrics
         for metric_name in metric_names:
             clsn_metrics[metric_name].append(clsn_dict[metric_name])
     clsn_metrics['category'] = category_names
